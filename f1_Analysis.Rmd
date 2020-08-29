@@ -392,6 +392,76 @@ leaflet(world_borders , options = leafletOptions(minZoom = 2), width = "100%") %
 
 # I progressi tecnici della F1
 
+```{r}
+monza_laps <- lap_times %>%
+  left_join(select(races, raceId, circuitId, year), by = "raceId") %>%
+  left_join(select(circuits, circuitId, circuitRef), by = "circuitId") %>%
+  filter(circuitRef == "monza") %>%
+  group_by(driverId, year) %>%
+  filter(milliseconds == min(milliseconds))
+
+kable(monza_laps) %>%
+  kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
+  scroll_box(width = "100%", height = "500px")
+
+limits <- monza_laps %>%
+  group_by(year) %>%
+  summarise(q3 = quantile(milliseconds, 3/4), q0 = milliseconds) %>%
+  ungroup() %>%
+  summarise(low = min(q0), highQ3 = max(q3))
+
+monza_laps %>%
+  select(milliseconds, year) %>%
+  ggplot(aes(x = as.factor(year), y = milliseconds)) +
+  geom_boxplot() +
+  ylim(as.numeric(limits)) +
+  ylab("Lap time [millisecoinds]") +
+  xlab("Year") +
+  theme_ipsum() +
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+```{r}
+monza_q <- qualifying %>%
+  left_join(select(races, raceId, circuitId, year), by = "raceId") %>%
+  left_join(select(circuits, circuitId, circuitRef), by = "circuitId") %>%
+  filter(circuitRef == "monza") %>%
+  gather(key = "part", value = "time", q1, q2, q3) %>%
+  select(driverId, time, year) %>%
+  filter(time != "")
+toSeconds <- function(x){
+  if (length(x) <= 0)
+    return(x)
+  unlist(
+    lapply(x,
+           function(i){
+             s <- as.numeric(strsplit(i,':',fixed=TRUE)[[1]])
+             s[1]*60000 + s[2]*1000
+           }
+    )
+  )
+}
+monza_q$milliseconds = toSeconds(monza_q$time)
+monza_q
+kable(monza_q) %>%
+  kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
+  scroll_box(width = "100%", height = "500px")
+limits <- monza_q %>%
+  group_by(year) %>%
+  summarise(q3 = quantile(milliseconds, 3/4), q0 = milliseconds) %>%
+  ungroup() %>%
+  summarise(low = min(q0), highQ3 = max(q3))
+monza_q %>%
+  select(milliseconds, year) %>%
+  ggplot(aes(x = as.factor(year), y = milliseconds)) +
+  geom_boxplot() +
+  ylim(as.numeric(limits)) +
+  ylab("Lap time [millisecoinds]") +
+  xlab("Year") +
+  theme_ipsum() +
+  theme(axis.text.x = element_text(angle = 90))
+```
+
 # La classifica dei campioni
 <div class="gray">
 Un dibattito molto acceso all'interno del mondo della F1 è chi sia il miglior pilota di sempre. Nel web è possibile trovare diverse classifiche, la maggior parte delle quali stilate secondo un metodo basato principalmente sulla valutazione dello stile di guida dei piloti e la conta di campionati del mondo vinti.
