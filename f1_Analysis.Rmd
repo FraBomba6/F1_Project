@@ -11,7 +11,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, out.height = "100%", out.width = "100%")
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 ```
 
 ```{r libraries, include=FALSE, message=FALSE, warning=FALSE}
@@ -96,7 +96,7 @@ I ricavi si dividono principalmente in:
 - __vendita di biglietti__
 - __sponsorizzazioni__
 
-I singoli costruttori hanno dei ricavi annui che vanno dai 70 milioni USD ai __500 milioni USD__ a seconda di principalmente tre fattori:
+I singoli costruttori hanno dei ricavi annui che vanno dai 70 milioni USD ai __500 milioni USD__, originati da tre fattori principali:
 
 - __sponsorizzazioni__
 - __ricavi della F1__ divisi ogni finale di stagione a seconda degli accordi commericali tra Formula One Group e i singoli team
@@ -104,14 +104,12 @@ I singoli costruttori hanno dei ricavi annui che vanno dai 70 milioni USD ai __5
 
 # La stagione attuale
 ## La F1 e il Sars-CoV-2
-La pandemia globale che stiamo affrontando ha messo in difficoltà anche il mondo dello sport e nemmeno la F1 non ha avuto scampo. Questo ha causato uno slittamento dell'inizio della stagione e una riduzione drastica dei circuiti a disposizione, costringendo la FIA ad organizzare gare multiple su alcuni circuiti (Spielberg, Silverstone e Manama), ad escludere circuiti di importanza storica come Monaco e ad assegnare all'Italia ben 3 gare su altrettanti circuiti (Monza, Imola e Mugello).
+La pandemia globale che stiamo affrontando ha messo in difficoltà anche il mondo dello motorsport. Questo ha causato uno slittamento dell'inizio della stagione e una riduzione drastica dei circuiti a disposizione, costringendo la FIA ad organizzare gare multiple su alcuni circuiti (Spielberg, Silverstone e Manama), ad escludere circuiti di importanza storica come Monaco e ad assegnare all'Italia ben 3 gare su altrettanti circuiti (Monza, Imola e Mugello).
 
-Ad oggi ci sono in calendario 17 gare e difficilmente se ne aggiungeranno altre.
-
-La F1 ha saputo adattarsi in maniera egregia alle esigenze igienico-sanitarie che l'attuale situazione impone
+Ad oggi ci sono in calendario 17 gare e difficilmente se ne aggiungeranno altre
 
 ## I team 2020
-```{r}
+```{r, out.height = "100%", out.width = "100%"}
 constructor_championships <- constructors %>%
   left_join(
     left_join(
@@ -149,7 +147,7 @@ constructor_championships %>%
 ```
 
 ## I piloti 2020
-```{r}
+```{r, out.height = "100%", out.width = "100%"}
 drivers_2020 <- drivers %>%
   left_join(
     left_join(
@@ -352,7 +350,7 @@ labels <- sprintf(
   world_borders$ADMIN, world_borders$gp_num
 ) %>% lapply(htmltools::HTML)  # Etichette formattate in HTML da utilizzare all'hovering di uno stato con il mouse
 
-leaflet(world_borders , options = leafletOptions(minZoom = 2), width = "100%") %>%  # Alcune opzioni per la mappa: zoom minimo e larghezza nella pagina
+map <-leaflet(world_borders , options = leafletOptions(minZoom = 2), width = "100%") %>%  # Alcune opzioni per la mappa: zoom minimo e larghezza nella pagina
   addTiles() %>%
   setView(15, 20, 2) %>%  # Posizione e zoom iniziale
   addAwesomeMarkers(circuits_stat$lng, # Alle coordinate di ogni circuito posiziono un marker
@@ -387,12 +385,17 @@ leaflet(world_borders , options = leafletOptions(minZoom = 2), width = "100%") %
             opacity = 1) %>%
   addControl(html = "<b>Each cluster represents the number of ciruits in a geographical area</br>
                      Each marker is clicable and indicates the number of races in that specific circuit</b>", "bottomleft")  # Per facilitare la lettura della mappa stand-alone è stata scritta una piccola guida
-
+map 
 ```
 
 # I progressi tecnici della F1
+## Tecninca al limite
+In 70 anni di storia, la F1 è diventata famosa per aver spinto al massimo i limiti tecnico-ingegneristici della costruzione delle automobili da corsa (ai progressi pionieristici della F1 in ambito di sistemi di propulsione si deve la nascita dei sistemi ibridi che troviamo sulle auto commerciali).
 
-```{r}
+I limiti tecnici non sono "naturali" ma vengono fiassati dall FIA in modo da garantire un alto livello di spettacolarità dello sport e un altrettanto alto livello di sicurezza per i piloti.
+
+## Tempi sui giri
+```{r, out.height = "100%", out.width = "100%"}
 monza_laps <- lap_times %>%
   left_join(select(races, raceId, circuitId, year), by = "raceId") %>%
   left_join(select(circuits, circuitId, circuitRef), by = "circuitId") %>%
@@ -421,7 +424,7 @@ monza_laps %>%
   theme(axis.text.x = element_text(angle = 90))
 ```
 
-```{r}
+```{r , out.height = "100%", out.width = "100%"}
 monza_q <- qualifying %>%
   left_join(select(races, raceId, circuitId, year), by = "raceId") %>%
   left_join(select(circuits, circuitId, circuitRef), by = "circuitId") %>%
@@ -429,6 +432,7 @@ monza_q <- qualifying %>%
   gather(key = "part", value = "time", q1, q2, q3) %>%
   select(driverId, time, year) %>%
   filter(time != "")
+
 toSeconds <- function(x){
   if (length(x) <= 0)
     return(x)
@@ -441,16 +445,19 @@ toSeconds <- function(x){
     )
   )
 }
+
 monza_q$milliseconds = toSeconds(monza_q$time)
-monza_q
+
 kable(monza_q) %>%
   kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
   scroll_box(width = "100%", height = "500px")
+
 limits <- monza_q %>%
   group_by(year) %>%
   summarise(q3 = quantile(milliseconds, 3/4), q0 = milliseconds) %>%
   ungroup() %>%
   summarise(low = min(q0), highQ3 = max(q3))
+
 monza_q %>%
   select(milliseconds, year) %>%
   ggplot(aes(x = as.factor(year), y = milliseconds)) +
@@ -643,6 +650,11 @@ Nei primi anni della F1 era possibile sostituire il pilota alla guida di una vet
 
 Ci sono stati tre campioni della F1 che per vari problemi non hanno partecipato all'ultima gara, l'autore del dataset ha deciso di non inserire in races un entry per questi piloti. Anche questo problema è stato corretto in precedenza
 
+## Numero di vittorie
+Il primo indice calcolato è stato il numero di vittorie rispetto al numero di gare effettuate
+
+Per trovare il numero di gare effettuato è bastato contare in __results__ il numero di apparizione di ogni id corrispondente ad un pilota campione del mondo
+
 ```{r}
 champions <- champions %>%
     left_join(
@@ -656,6 +668,14 @@ champions <- champions %>%
     ) %>%
     select(-n)
 
+kable(champions) %>%
+  kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
+  scroll_box(width = "100%", height = "300px")
+
+```
+
+Il numero di vittorie è anch'esso contenuto nel df __results__: isolati i risultati con position == 1 e ragruppando per pilota, è necessario contare il numero di occorrenze
+```{r}
 champions <- champions %>%
   left_join(
     left_join(results, select(races, raceId, year), by = "raceId") %>%
@@ -669,6 +689,14 @@ champions <- champions %>%
     by = c("driverId", "year")
 )
 
+kable(champions) %>%
+  kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
+  scroll_box(width = "100%", height = "300px")
+
+```
+
+A conclusione è necessario calcolare l'indice di vittorie
+```{r}
 champions <- champions %>%
   mutate(winsRate = wins/starts)
 
@@ -677,8 +705,10 @@ kable(champions) %>%
   scroll_box(width = "100%", height = "300px")
 ```
 
-## Arricchire i campioni
-Il df costruito in precedenza, contenente alcuni dati sui campioni del mondo viene arricchito con i dati dei df del dataset originale
+## Contributo dei campioni ai team
+Un indice interessante per valutare le performance di un pilota è il rapporto $$ punti\;pilota / punti\;squadra $$ che fornisce una misura del grado di bravura del pilota rispetto al compagno di squadra (importante è sottolineare che i piloti utilizzano due vetture identiche e varia solo l'assetto in funzione del circuito)
+
+Per calcolare tale indice vengono inizialmente aggiunte delle informazioni al df champions
 ```{r}
 champions <- champions %>%
   left_join(select(drivers, forename, surname, driverId), by = "driverId") %>%
@@ -765,7 +795,15 @@ kable(champions) %>%
   kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
   scroll_box(width = "100%", height = "300px")
 ```
+Completata l'integrazione del df __champions__ con i punti del campionato costruttori mancanti è possibile calcolare l'indice __ability__ che da un'idea del grado di abilità del pilota
+```{r}
+champions <- champions %>%
+  mutate(ability = seasonPoints/constructorPoints)
 
+kable(champions) %>%
+  kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
+  scroll_box(width = "100%", height = "300px")
+```
 ## Punti cumulati
 Un'indice di efficienza di un pilota è sicuramente il rapporto tra i punti cumulati in una stagione e il numero di punti disponibili per il vincitore di tutte le gare della stagione. Estendendo questo rapporto a tutti i campionati in cui ha preso parte un pilota si fornisce un indice globale delle sue abilità.
 
@@ -777,6 +815,8 @@ point_scoring_system %>%
   kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
   scroll_box(width = "100%", height = "300px")
 ```
+
+Combinando le informazioni contenute in champions, results e point_scoring_system si possono ottenere i punti cumulati che un pilota avrebbe potuto ottenere in tutta la sua carriera
 ```{r}
 champions <- champions %>%
   left_join(
@@ -799,6 +839,7 @@ kable(champions) %>%
   scroll_box(width = "100%", height = "300px")
 ```
 
+Lavorando ora su champions e results è possibile ricavare i punti che un pilota ha ottenuto in tutta la carriera
 ```{r}
 champions <- champions %>%
   left_join(
@@ -818,6 +859,7 @@ kable(champions) %>%
   scroll_box(width = "100%", height = "300px")
 ```
 
+Combinando i due risultati ottenuti in precedenza si ottiene l'indice di efficienza punti __perfectionRate__
 ```{r}
 champions <- champions %>%
   mutate(perfectionRate = gainedPoints/perfectionPoints)
@@ -827,7 +869,8 @@ kable(champions) %>%
   scroll_box(width = "100%", height = "300px")
 ```
 
-Sono stati introdotti due ulteriori indici:
+## Campionati vinti
+Sono stati introdotti due indici riguardanti le vittorie dei campionati del mondo:
 
 * dominion: indice che va da 0 a 1 e da una misura del dominio di un pilota in F1; è dato dalla min max normalization del numero consecutivo di campionati che un pilota è stato in grado di ottenere;
 
@@ -853,15 +896,9 @@ kable(champions) %>%
   kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
   scroll_box(width = "100%", height = "300px")
 ```
-```{r}
-champions <- champions %>%
-  mutate(ability = seasonPoints/constructorPoints)
 
-kable(champions) %>%
-  kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
-  scroll_box(width = "100%", height = "300px")
-```
 ## La classifica dei campioni
+Avendo calcolato gli indici necessari a stilare la classifica dei campioni la media degli indici restituisce il punteggio finale del singolo pilota
 ```{r}
 best <- champions %>%
   mutate(rank = (championship + dominion + perfectionRate + winsRate + ability)/5) %>%
@@ -872,7 +909,13 @@ kable(best) %>%
   kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
   scroll_box(width = "100%", height = "300px")
 
+```
+Dato che la classifica è applicata a tutti i campioni del mondo, stagione per stagione, è possibile avere un pilota con score differenti a seconda della stagione di riferimento. Massimizzando gli score dei piloti è possibile ottenere una classifica ridotta e più informativa
+```{r}
 best %>%
   group_by(driver) %>%
-  filter(rank == max(rank))
+  filter(rank == max(rank)) %>%
+  kable() %>%
+  kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
+  scroll_box(width = "100%", height = "300px")
 ```
