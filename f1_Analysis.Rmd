@@ -271,7 +271,7 @@ Per rendere la mappa più significativa è stato deciso di aggiungere alcuni dat
 + costruttore dell'auto
 
 ## I vincitori
-Il primo passo è isolare da tutti i risultati delle gare (contenuti nella tabella results) i risultati relativi ai primi classificati (i vincitori della gara)
+Il primo passo è isolare da tutti i risultati delle gare (contenuti nella tabella __results__) i risultati relativi ai primi classificati (i vincitori della gara)
 ```{r}
 winners <- results %>%
   filter(position == 1) %>%  # partendo dal df con i risultati di ogni gara per ogni pilota vengono trovati tutti quelli cha hanno occupato la posizione 1
@@ -300,7 +300,7 @@ kable(gp_last_occurence) %>%
 ```
 
 ## I vincitori delle ultime occorrenze dei GP
-Partendo dai due data frame ottenuti in precedenza si può ora spaere chi ha vinto l'ultima occorrenza di una gara
+Partendo dai due data frame ottenuti in precedenza si può ora sapere chi ha vinto l'ultima occorrenza di una gara
 ```{r}
 gp_last_occurence <- left_join(gp_last_occurence, winners, by = "raceId") %>%  # left_join delle due tabelle appena costruite
   left_join(select(drivers, driverId, forename, surname), by = "driverId") %>%  # left_join della tabella drivers delle variabili nome e cognome dei piloti
@@ -390,11 +390,11 @@ map
 
 # I progressi tecnici della F1
 ## Tecninca al limite
-In 70 anni di storia, la F1 è diventata famosa per aver spinto al massimo i limiti tecnico-ingegneristici della costruzione delle automobili da corsa (ai progressi pionieristici della F1 in ambito di sistemi di propulsione si deve la nascita dei sistemi ibridi che troviamo sulle auto commerciali).
+In 70 anni di storia, la F1 è diventata famosa per aver spinto al massimo i limiti tecnico-ingegneristici della costruzione delle automobili da corsa (ai progressi pionieristici della F1 in ambito di sistemi di propulsione si deve la nascita dei sistemi ibridi che troviamo sulle auto commerciali odierne).
 
-I limiti tecnici non sono "naturali" ma vengono fiassati dall FIA in modo da garantire un alto livello di spettacolarità dello sport e un altrettanto alto livello di sicurezza per i piloti.
+Per quantificare il progresso tecnico è possibile effettuare un analisi dei tempi sul giro e verificare l'andamento di questi ultimi nel tempo.
 
-## Tempi sui giri
+## Tempi in gara
 ```{r, out.height = "100%", out.width = "100%"}
 monza_laps <- lap_times %>%
   left_join(select(races, raceId, circuitId, year), by = "raceId") %>%
@@ -423,7 +423,11 @@ monza_laps %>%
   theme_ipsum() +
   theme(axis.text.x = element_text(angle = 90))
 ```
+Un analisi non contestualizzata del grafico precedente potrebbe far pensare che le auto della stagione 2004 siano più veloci delle auto del 2019 sul giro secco. In realtà i tempi sopra riportati sono influenzati da un fattore esterno alle pure performance delle auto, in particolare i tempi riportati nel grafico sono influenzati dalle performance pneumatici.
+Nel 2004 si utilizzavano ancora pneumatici con battistrada intagliato e una mescola nettamente più dura (meno aderenza ma meno usura) rispetto alle auto del 2019, questo garantiva un usura inferiore durante la gara che risultava nei giri finali in una buona aderenza; questa, combinata con il peso ridotto dell'auto, per la presenza nel serbatoio di una quantità esigua di carburante, risultava in performance incredibili nei giri finali della __gara__. Le auto degli ultimi 5 anni, al contrario, sviluppando una maggior potenza motore, necessitano di un'aderenza di altissimo grado il che si converte nell'utilizzo di gomme con mescole morbide e battistrada liscio. Tuttavia questo porta l'usura degli pneumatici ad essere molto alta e costringe i piloti ad attuare tecniche di riduzione dell'usura che si traducono in tempi sul giro maggiori delle reali capacità di pneumatici e di motore.
 
+## Tempi di qualifica
+Mentre in gara si attuano delle strategie di conservazione di pneumatici e motore, in qualifica si cerca di massimizzare le prestazioni sui singoli giri. Questo permette di avere un riscontro più veritiero di quelle che sono le prestazioni delle monoposto
 ```{r , out.height = "100%", out.width = "100%"}
 monza_q <- qualifying %>%
   left_join(select(races, raceId, circuitId, year), by = "raceId") %>%
@@ -468,12 +472,14 @@ monza_q %>%
   theme_ipsum() +
   theme(axis.text.x = element_text(angle = 90))
 ```
+Come pare evidente dalla tabella precedente e dal relativo grafico, i tempi in qualifica sono nettamente migliori nel 2019 rispetto al 2004.
 
+E' interessante osservare come tra il 2004 e il 2014 le prestazioni delle auto abbiano avuto una diminuzione (non si considerano il 2008 e il 2017 perché qualifiche svolte su circuito bagnato). Fino al 2004 lo sviluppo tecnico delle auto non ha avuto limiti ma solo regolamentazioni varie. Alcuni incidenti nei primi anni 2000 e le impressionanti prestazioni delle vetture del 2004 hanno spinto la FIA ad effettuare drastici cambiamenti nei regolamenti tecnici per aumentare la sicurezza dei piloti alla guida delle vetture. Una sorta di stabilità del regolamento tecnico raggiunta nel 2014 ha permesso ai costruttori di mantenere standard molto alti di sicurezza e allo stesso tempo di migliorare gli aspetti prestazionali delle vetture
 # La classifica dei campioni
 <div class="gray">
 Un dibattito molto acceso all'interno del mondo della F1 è chi sia il miglior pilota di sempre. Nel web è possibile trovare diverse classifiche, la maggior parte delle quali stilate secondo un metodo basato principalmente sulla valutazione dello stile di guida dei piloti e la conta di campionati del mondo vinti.
 
-Il principale obbiettivo di questa sezione è costruire un indice complesso di pregio dei piloti basato interamente sui dati raccolti.
+Il principale obbiettivo di questa sezione è costruire un indice di pregio dei piloti basato interamente sui dati raccolti.
 </div>
 
 ## Integrazione del dataset iniziale | Il sistema di punteggio della F1
@@ -919,3 +925,5 @@ best %>%
   kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
   scroll_box(width = "100%", height = "300px")
 ```
+
+Come pronosticabile le prime due posizioni sono occupate da Schumaker e da Hamilton. In questa classifica Hamilton ha vinto anche la stagione corrente in base alle gare fino ad ora disputate, se dovesse avere delle prestazioni simili a quelle della scorsa stagione passerebbe ad essere il migliore pilota di sempre della F1
