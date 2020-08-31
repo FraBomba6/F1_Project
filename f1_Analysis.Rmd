@@ -478,16 +478,22 @@ E' interessante osservare come tra il 2004 e il 2014 le prestazioni delle auto a
 
 ## Confronto diretto
 ```{r}
-races %>% select(year, circuitId)
+com_circuit <- semi_join(
+  filter(select(races, year, circuitId), year == 2004),
+  filter(select(races, year, circuitId), year == 2019), by = "circuitId") %>%
+  select(circuitId)
+
 vs_lap <- lap_times %>%
-  left_join(circuit_2004, by = "circuitId") %>%
-  left_join(, by = "circuitId") %>%
+  left_join(select(races, raceId, circuitId, year), by = "raceId") %>%
+  left_join(select(circuits, circuitId, circuitRef), by = "circuitId") %>%
+  semi_join(com_circuit, by = "circuitId") %>%
+  filter(year == 2004 | year == 2019) %>%
   group_by(year, lap, circuitId) %>%
   filter(position == 1) %>%
   group_by(circuitId) %>%
   nest() %>%
   ungroup() %>%
-  sample_n(5) %>%
+  sample_n(3) %>%
   unnest() %>%
   ggplot(aes(x = lap, y = milliseconds, group = year, color = circuitRef)) +
   geom_line()
