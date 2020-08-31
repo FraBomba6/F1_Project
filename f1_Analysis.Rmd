@@ -320,11 +320,11 @@ kable(circuits_stat) %>%
 Per poter realizzare la mappa della distribuzione dei GP nel mondo sono necessari ancora alcuni dettagli:
 
 + per disegnare i poligoni corrispondenti agli stati viene utilizzato un file __.geojson__ contenente le coordinate dei punti che delimitano i confini nazionali
-```{r}
+```{r borders upload}
 world_borders  <- geojson_sf("./data/countries.geojson")
 ```
 + le sigle di alcuni Paesi, contenute nelle tabelle create in precedenza, vanno modificate e riscritte per intero (UK, USA, UAE, Korea)
-```{r}
+```{r borders rename}
 gp_per_country$country[gp_per_country$country == "Korea"] <- "South Korea"
 gp_per_country$country[gp_per_country$country == "UK"] <- "United Kingdom"
 gp_per_country$country[gp_per_country$country == "UAE"] <- "United Arab Emirates"
@@ -333,7 +333,7 @@ gp_per_country$country[gp_per_country$country == "USA"] <- "United States of Ame
 + ai dati del __.geojson__ vanno uniti i dati relativi al numero di GP ospitati dagli stati per poter manipolare le opzioni delle funzione della libreria leaflet in maniera agevole
 
 Di seguito viene mostrato un esempio di quanto fatto
-```{r}
+```{r add occurrences}
 world_borders <- right_join(world_borders, gp_per_country, by = c("ADMIN" = "country"))
 
 kable(world_borders[1:1,]) %>%
@@ -342,7 +342,7 @@ kable(world_borders[1:1,]) %>%
 ```
 
 ## Distribuzione globale dei GP
-```{r}
+```{r map}
 pal <- colorBin("viridis", world_borders$gp_num)  # Palette di colori che servirà per riempire gli stati in base al numero di gare che hanno ospitato
 
 labels <- sprintf(
@@ -405,7 +405,7 @@ Dal punto di vista tecnico il circuito risulta essere bilanciato:
 + i freni sono sottoposti ad uno sforzo medio basso per l'assenza di frenate brusche e il numero ridotto delle frenate stesse.
 
 ## Tempi in gara
-```{r, out.height = "100%", out.width = "100%"}
+```{r suzuka laps, out.height = "100%", out.width = "100%"}
 suzuka_laps <- lap_times %>%
   left_join(select(races, raceId, circuitId, year), by = "raceId") %>%
   left_join(select(circuits, circuitId, circuitRef), by = "circuitId") %>%
@@ -427,22 +427,34 @@ suzuka_laps %>%
   select(milliseconds, year) %>%
   ggplot(aes(x = as.factor(year), y = milliseconds)) +
   geom_boxplot() +
-  ylim(as.numeric(limits)) +
+  stat_summary(fun = min, geom = "line", colour = "red", group = 1) +
+  scale_y_continuous(breaks = seq(90000, 116000, 2000), limits = as.numeric(limits)) +
   ylab("Lap time [millisecoinds]") +
   xlab("Year") +
   theme_ipsum() +
   theme(axis.text.x = element_text(angle = 90))
 ```
-Un analisi non contestualizzata del grafico precedente potrebbe far pensare che le auto della stagione 2004 siano più veloci delle auto del 2019 sul giro secco. In realtà i tempi sopra riportati sono influenzati da un fattore esterno alle pure performance delle auto, in particolare i tempi riportati nel grafico sono influenzati dalle performance pneumatici.
-Nel 2004 si utilizzavano ancora pneumatici con battistrada intagliato e una mescola nettamente più dura (meno aderenza ma meno usura) rispetto alle auto del 2019, questo garantiva un usura inferiore durante la gara che risultava nei giri finali in una buona aderenza; questa, combinata con il peso ridotto dell'auto, per la presenza nel serbatoio di una quantità esigua di carburante, risultava in performance incredibili nei giri finali della __gara__. Le auto degli ultimi 5 anni, al contrario, sviluppando una maggior potenza motore, necessitano di un'aderenza di altissimo grado il che si converte nell'utilizzo di gomme con mescole morbide e battistrada liscio. Tuttavia questo porta l'usura degli pneumatici ad essere molto alta e costringe i piloti ad attuare tecniche di riduzione dell'usura che si traducono in tempi sul giro maggiori delle reali capacità di pneumatici e di motore.
+Dal grafico precedente risulta interessante osservare come nel 2015 il giro più veloce registrato in gara sia nettamente migliore di tutti i tempi sul giro registrati tra il 2006 e il 2018 (sempre durante una gara)
 
-## Tempi di qualifica
-Mentre in gara si attuano delle strategie di conservazione di pneumatici e motore, in qualifica si cerca di massimizzare le prestazioni sui singoli giri. Questo permette di avere un riscontro più veritiero di quelle che sono le prestazioni delle monoposto
-```{r , out.height = "100%", out.width = "100%"}
-suzuka_q <- qualifying %>%
+Questo è dovuto al fatto che tra il 2004 e il 2005 lo sviluppo del motore, in termini di erogazione di potenza, cavalli e rpm, ha raggiunto un apice nello sport: nel 2005 Honda ha prodotto un motore termico capce di erogare 920 CV (720 kW) su una monoposto che pesa 600 Kg.
+
+Diversi incidenti hanno però portato la FIA a porsi domande sull'effettiva necessità di avere simili prestazioni a costo di sacrficare la sicurezza di piloti, meccanici, steward e pubblico. Questo ha portato ad un inasprimento delle regole sulle motorizzazioni, favorendo lo sviluppo della parte aerodinamica della vettura (nettamente carente rispetto ai propulsori) e degli pneumatici.
+
+![F2004](./data/F2004.jpg){width=100%, fig.align='center'} ![SF90](./data/SF90.jpg){width=100%, fig.align='center'}
+
+## Circuiti ad alto carico aerodinamico
+A conferma di quanto detto in precedenza in merito al basso sviluppo aerodinamico delle vetture del 2004/2005, è interessante confrontare i tempi di qualifica su un circuito dove la potenza è marginale rispetto al controllo dell'auto.
+
+Definito _Monaco senza i palazzi_ l' __Hungaroring__ è il circuito che dal 1986 ospita il GP di Ungheria. E' caratterizzato dalle complesse curve miste (veloci e lente) e dai brevi rettilinei, questo costringe i costruttori ad adottare setup aerodinamici che generino altissimi livelli di portanza per permettere alle auto di mantenere velocità adeguate nelle curve rinunciando alle velocità di punta sui rettilinei.
+
+![](https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Hungaroring.svg/569px-Hungaroring.svg.png)
+##Tempi in qualifica
+Mentre in gara si attuano delle strategie di conservazione di pneumatici e motore, in qualifica si cerca di massimizzare le prestazioni sui singoli giri, il ché fa emergere anche le carenze tecniche delle vetture. Per questo motivo il seguente grafico si basa sui tempi dei migliori tempi in qualifica.
+```{r suzuka q, out.height = "100%", out.width = "100%"}
+hungary_q <- qualifying %>%
   left_join(select(races, raceId, circuitId, year), by = "raceId") %>%
   left_join(select(circuits, circuitId, circuitRef), by = "circuitId") %>%
-  filter(circuitRef == "suzuka") %>%
+  filter(circuitRef == "hungaroring") %>%
   gather(key = "part", value = "time", q1, q2, q3) %>%
   select(driverId, time, year) %>%
   filter(time != "")
@@ -460,34 +472,33 @@ toSeconds <- function(x){
   )
 }
 
-suzuka_q$milliseconds = toSeconds(suzuka_q$time)
+hungary_q$milliseconds = toSeconds(hungary_q$time)
 
-kable(suzuka_q) %>%
+kable(hungary_q) %>%
   kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
   scroll_box(width = "100%", height = "500px")
 
-limits <- suzuka_q %>%
+limits <- hungary_q %>%
   group_by(year) %>%
   summarise(q3 = quantile(milliseconds, 3/4), q0 = milliseconds) %>%
   ungroup() %>%
   summarise(low = min(q0), highQ3 = max(q3))
 
-suzuka_q %>%
+hungary_q %>%
   select(milliseconds, year) %>%
   ggplot(aes(x = as.factor(year), y = milliseconds)) +
   geom_boxplot() +
-  ylim(as.numeric(limits)) +
+  stat_summary(fun = min, geom = "line", colour = "red", group = 1) +
+  scale_y_continuous(breaks = seq(74000, 98000, 2000), limits = as.numeric(limits)) +
   ylab("Lap time [millisecoinds]") +
   xlab("Year") +
   theme_ipsum() +
   theme(axis.text.x = element_text(angle = 90))
 ```
-Come pare evidente dalla tabella precedente e dal relativo grafico, i tempi in qualifica sono nettamente migliori nel 2019 rispetto al 2004.
+Dal grafico precedente si può confermare quanto detto in precedenza: le vetture del 2005 pur essendo, a livello motoristico, più performanti di auto più recenti (per esempio la Red Bull 2010 con motore Renault da 750 CV), su circuiti dove l'aerodinamica ha maggior peso non riescono ad esprimere la loro superiorità.
 
-E' interessante osservare come tra il 2004 e il 2014 le prestazioni delle auto abbiano avuto una diminuzione (non si considerano il 2008 e il 2017 perché qualifiche svolte su circuito bagnato). Fino al 2004 lo sviluppo tecnico delle auto non ha avuto limiti ma solo regolamentazioni varie. Alcuni incidenti nei primi anni 2000 e le impressionanti prestazioni delle vetture del 2004 hanno spinto la FIA ad effettuare drastici cambiamenti nei regolamenti tecnici per aumentare la sicurezza dei piloti alla guida delle vetture. Una sorta di stabilità del regolamento tecnico raggiunta nel 2014 ha permesso ai costruttori di mantenere standard molto alti di sicurezza e allo stesso tempo di migliorare gli aspetti prestazionali delle vetture
-
-## Confronto diretto
-```{r}
+## Confronto diretto di alcuni tracciati
+```{r vs laps, out.height = "100%", out.width = "100%"}
 vs_lap <- lap_times %>%
   left_join(select(races, raceId, circuitId, year), by = "raceId") %>%
   left_join(select(circuits, circuitId, circuitRef), by = "circuitId") %>%
@@ -500,6 +511,13 @@ vs_lap <- lap_times %>%
   geom_line(aes(text = sprintf("Giro: %d<br>Tempo: %s<br>Pilota: %s", lap, time, surname))) 
 ggplotly(vs_lap, tooltip = "text")
 ```
+
+Confrontando ora l'andamento di tre gare delle stagioni 2004 e 2019 (viene considerato il miglior tempo giro per giro) è interessante rilevare anche altri cambiamenti nelle prestazioni, in particolare nel comportamento degli pneumatici.
+
+Isolando il tracciato di Monza si coglie il primo aspetto interessante: le auto del 2019 sono più performanti nei primissimi giri. Questo è dovuto al fatto che gli pneumatici sono lisci e composti da una mescola di mastice più morbida che accumula il calore necessario per la massima aderenza in tempi minori e garantisce una miglior aderenza sul tracciato. Non appena gli pneumatici delle auto del 2004 arrivano a temperatura ottimale vi è il netto superamento in termini prestazionali
+
+Isolando invece i tracciato di Suzuka e l'Hungaroring si nota come l'alleggerimento dell'auto, dovuto al consumo di carburante, supera, in termini prestazionali, l'usura dello pneumatico. Questo, combinato con l'ottimo carico aerodinamico delle monoposto 2019 ne migliora le prestazioni con il passare dei giri.
+Le vetture del 2004, al contrario, bilanciano la perdita di aderenza dovuta all'usura con la perdita di peso, mentre la mancanza di aderenza aerodinamica ne fa peggiorare le performance nel fine gara.
 
 # La classifica dei campioni
 <div class="gray">
