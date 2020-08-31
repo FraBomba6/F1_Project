@@ -475,6 +475,28 @@ monza_q %>%
 Come pare evidente dalla tabella precedente e dal relativo grafico, i tempi in qualifica sono nettamente migliori nel 2019 rispetto al 2004.
 
 E' interessante osservare come tra il 2004 e il 2014 le prestazioni delle auto abbiano avuto una diminuzione (non si considerano il 2008 e il 2017 perché qualifiche svolte su circuito bagnato). Fino al 2004 lo sviluppo tecnico delle auto non ha avuto limiti ma solo regolamentazioni varie. Alcuni incidenti nei primi anni 2000 e le impressionanti prestazioni delle vetture del 2004 hanno spinto la FIA ad effettuare drastici cambiamenti nei regolamenti tecnici per aumentare la sicurezza dei piloti alla guida delle vetture. Una sorta di stabilità del regolamento tecnico raggiunta nel 2014 ha permesso ai costruttori di mantenere standard molto alti di sicurezza e allo stesso tempo di migliorare gli aspetti prestazionali delle vetture
+
+## Confronto diretto
+```{r}
+races %>% select(year, circuitId)
+vs_lap <- lap_times %>%
+  left_join(circuit_2004, by = "circuitId") %>%
+  left_join(, by = "circuitId") %>%
+  group_by(year, lap, circuitId) %>%
+  filter(position == 1) %>%
+  group_by(circuitId) %>%
+  nest() %>%
+  ungroup() %>%
+  sample_n(5) %>%
+  unnest() %>%
+  ggplot(aes(x = lap, y = milliseconds, group = year, color = circuitRef)) +
+  geom_line()
+ggplotly(vs_lap)
+  
+pit_stops %>%
+  filter(driverId == 844 & raceId == 1023)
+```
+
 # La classifica dei campioni
 <div class="gray">
 Un dibattito molto acceso all'interno del mondo della F1 è chi sia il miglior pilota di sempre. Nel web è possibile trovare diverse classifiche, la maggior parte delle quali stilate secondo un metodo basato principalmente sulla valutazione dello stile di guida dei piloti e la conta di campionati del mondo vinti.
