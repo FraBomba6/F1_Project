@@ -109,7 +109,7 @@ La pandemia globale che stiamo affrontando ha messo in difficoltà anche il mond
 Ad oggi ci sono in calendario 17 gare e difficilmente se ne aggiungeranno altre
 
 ## I team 2020
-```{r, out.height = "100%", out.width = "100%"}
+```{r 2020_teams, out.height = "100%", out.width = "100%"}
 constructor_championships <- constructors %>%
   left_join(
     left_join(
@@ -147,7 +147,7 @@ constructor_championships %>%
 ```
 
 ## I piloti 2020
-```{r, out.height = "100%", out.width = "100%"}
+```{r 2020_drivers, out.height = "100%", out.width = "100%"}
 drivers_2020 <- drivers %>%
   left_join(
     left_join(
@@ -221,7 +221,7 @@ La mappa può essere anche arricchita di informazioni per rendere la sua esplora
 1. Individuare l'ultimo vincitore di un GP (nome, cognome, anno di vittoria e costruttore della vettura)
 
 ## Occorrenze di ogni GP
-```{r circuits_stat, message=FALSE}
+```{r gp_occurrence, message=FALSE}
 circuits_stat <- races %>%  # races è un buon punto di partenza, contiene le informazioni essenziali su ogni gara svoltasi nei 70 anni della F1
   group_by(circuitId, name) %>%  # raggruppamento per id del circuito e nome
   count(sort = TRUE) %>%  # conteggio delle gare disputate in ogni gruppo
@@ -238,7 +238,7 @@ kable(circuits_stat) %>%
 ```
 
 ## Occorenze per stato
-```{r world_distribution, message=FALSE}
+```{r country_occurrence, message=FALSE}
 gp_per_country <- circuits_stat %>%
   select(gp_num, country) %>%  # L'unico interesse, in questo caso, è sapere quante gare ha ospitato uno stato. Si seleziona dunque solo la colonna numero di gp (riferiti ad un circuito) e lo  stato in cui il circuito è localizzato
   group_by(country) %>% # raggruppo per stato
@@ -250,7 +250,7 @@ kable(gp_per_country) %>%
   scroll_box(width = "100%", height = "500px")
 ```
 
-## Italia al primo posto
+## Digressione: Italia, Paese record della F1
 Dall'analisi delle occorrenze fatta in precedenza è possibile osservare come l'Italia sia prima per numero di occorrenze di un singolo GP `r circuits_stat %>% slice_head() %>% select(gp_num, circuit_name) %>% kable() %>% kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>% scroll_box(width = "100%")`
 e anche prima valutando i GP per stato `r gp_per_country %>% slice_head() %>% kable() %>% kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>% scroll_box(width = "100%")`  
 
@@ -272,7 +272,7 @@ Per rendere la mappa più significativa è stato deciso di aggiungere alcuni dat
 
 ## I vincitori
 Il primo passo è isolare da tutti i risultati delle gare (contenuti nella tabella __results__) i risultati relativi ai primi classificati (i vincitori della gara)
-```{r}
+```{r winners}
 winners <- results %>%
   filter(position == 1) %>%  # partendo dal df con i risultati di ogni gara per ogni pilota vengono trovati tutti quelli cha hanno occupato la posizione 1
   select(raceId, driverId, constructorId)  # vengono selezionate le sole colonne necessarie
@@ -286,7 +286,7 @@ kable(winners) %>%
 ## Ultima occorrenza di un GP in un determinato circuito
 Per come sono strutturate le denominazioni delle gare della F1 e rendere la mappa il più possibile completa, è necessario abbinare un GP ad uno specifico circuito. Partendo da questo presupposto sono state isolate le utlime occorrenze dei GP
 
-```{r}
+```{r gp_last_occurrence}
 gp_last_occurence <- races %>%
   group_by(circuitId, name) %>%  # raggruppamento per id circuito e nome
   filter(date < as.character(Sys.Date())) %>%
@@ -301,7 +301,7 @@ kable(gp_last_occurence) %>%
 
 ## I vincitori delle ultime occorrenze dei GP
 Partendo dai due data frame ottenuti in precedenza si può ora sapere chi ha vinto l'ultima occorrenza di una gara
-```{r}
+```{r last_winners}
 gp_last_occurence <- left_join(gp_last_occurence, winners, by = "raceId") %>%  # left_join delle due tabelle appena costruite
   left_join(select(drivers, driverId, forename, surname), by = "driverId") %>%  # left_join della tabella drivers delle variabili nome e cognome dei piloti
   rename(gp_name = name) %>%
@@ -392,28 +392,38 @@ map
 ## Tecninca al limite
 In 70 anni di storia, la F1 è diventata famosa per aver spinto al massimo i limiti tecnico-ingegneristici della costruzione delle automobili da corsa (ai progressi pionieristici della F1 in ambito di sistemi di propulsione si deve la nascita dei sistemi ibridi che troviamo sulle auto commerciali odierne).
 
-Per quantificare il progresso tecnico è possibile effettuare un analisi dei tempi sul giro e verificare l'andamento di questi ultimi nel tempo.
+Per provare a visualizzare il progresso tecnico è possibile effettuare un analisi dei tempi sul giro e verificare l'andamento di questi ultimi nel tempo.
+
+## Circuito di Suzuka
+Per effetturare il confronto dei tempi è stato deciso di utilizzare il Circuito di Suzuka
+![](https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Suzuka_circuit_map--2005.svg/1024px-Suzuka_circuit_map--2005.svg.png)
+La scelta è dovuta al fatto che la conformazione del circuito non ha subito grandi variazioni nel tempo e quindi risulta efficace nel escludere la variabile delle modifiche al circuito nella valutazione dei tempi sul giro.
+Dal punto di vista tecnico il circuito risulta essere bilanciato:
+
++ setup aerodinamico medio che garantisca aderenza nelle numerose curve veloci e una buona velocità di punta nei rettilinei;
++ la power unit opera al massimo regime per il 70% del giro;
++ i freni sono sottoposti ad uno sforzo medio basso per l'assenza di frenate brusche e il numero ridotto delle frenate stesse.
 
 ## Tempi in gara
 ```{r, out.height = "100%", out.width = "100%"}
-monza_laps <- lap_times %>%
+suzuka_laps <- lap_times %>%
   left_join(select(races, raceId, circuitId, year), by = "raceId") %>%
   left_join(select(circuits, circuitId, circuitRef), by = "circuitId") %>%
-  filter(circuitRef == "monza") %>%
+  filter(circuitRef == "suzuka") %>%
   group_by(driverId, year) %>%
   filter(milliseconds == min(milliseconds))
 
-kable(monza_laps) %>%
+kable(suzuka_laps) %>%
   kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
   scroll_box(width = "100%", height = "500px")
 
-limits <- monza_laps %>%
+limits <- suzuka_laps %>%
   group_by(year) %>%
   summarise(q3 = quantile(milliseconds, 3/4), q0 = milliseconds) %>%
   ungroup() %>%
   summarise(low = min(q0), highQ3 = max(q3))
 
-monza_laps %>%
+suzuka_laps %>%
   select(milliseconds, year) %>%
   ggplot(aes(x = as.factor(year), y = milliseconds)) +
   geom_boxplot() +
@@ -429,10 +439,10 @@ Nel 2004 si utilizzavano ancora pneumatici con battistrada intagliato e una mesc
 ## Tempi di qualifica
 Mentre in gara si attuano delle strategie di conservazione di pneumatici e motore, in qualifica si cerca di massimizzare le prestazioni sui singoli giri. Questo permette di avere un riscontro più veritiero di quelle che sono le prestazioni delle monoposto
 ```{r , out.height = "100%", out.width = "100%"}
-monza_q <- qualifying %>%
+suzuka_q <- qualifying %>%
   left_join(select(races, raceId, circuitId, year), by = "raceId") %>%
   left_join(select(circuits, circuitId, circuitRef), by = "circuitId") %>%
-  filter(circuitRef == "monza") %>%
+  filter(circuitRef == "suzuka") %>%
   gather(key = "part", value = "time", q1, q2, q3) %>%
   select(driverId, time, year) %>%
   filter(time != "")
@@ -450,19 +460,19 @@ toSeconds <- function(x){
   )
 }
 
-monza_q$milliseconds = toSeconds(monza_q$time)
+suzuka_q$milliseconds = toSeconds(suzuka_q$time)
 
-kable(monza_q) %>%
+kable(suzuka_q) %>%
   kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
   scroll_box(width = "100%", height = "500px")
 
-limits <- monza_q %>%
+limits <- suzuka_q %>%
   group_by(year) %>%
   summarise(q3 = quantile(milliseconds, 3/4), q0 = milliseconds) %>%
   ungroup() %>%
   summarise(low = min(q0), highQ3 = max(q3))
 
-monza_q %>%
+suzuka_q %>%
   select(milliseconds, year) %>%
   ggplot(aes(x = as.factor(year), y = milliseconds)) +
   geom_boxplot() +
@@ -478,29 +488,17 @@ E' interessante osservare come tra il 2004 e il 2014 le prestazioni delle auto a
 
 ## Confronto diretto
 ```{r}
-com_circuit <- semi_join(
-  filter(select(races, year, circuitId), year == 2004),
-  filter(select(races, year, circuitId), year == 2019), by = "circuitId") %>%
-  select(circuitId)
-
 vs_lap <- lap_times %>%
   left_join(select(races, raceId, circuitId, year), by = "raceId") %>%
   left_join(select(circuits, circuitId, circuitRef), by = "circuitId") %>%
-  semi_join(com_circuit, by = "circuitId") %>%
+  left_join(select(drivers, driverId, surname), by = "driverId") %>%
   filter(year == 2004 | year == 2019) %>%
+  filter(circuitRef == "monza" | circuitRef == "hungaroring" | circuitRef == "suzuka") %>%
   group_by(year, lap, circuitId) %>%
-  filter(position == 1) %>%
-  group_by(circuitId) %>%
-  nest() %>%
-  ungroup() %>%
-  sample_n(3) %>%
-  unnest() %>%
-  ggplot(aes(x = lap, y = milliseconds, group = year, color = circuitRef)) +
-  geom_line()
-ggplotly(vs_lap)
-  
-pit_stops %>%
-  filter(driverId == 844 & raceId == 1023)
+  filter(milliseconds == min(milliseconds)) %>%
+  ggplot(aes(x = lap, y = milliseconds, group = year, color = interaction(circuitRef, year))) +
+  geom_line(aes(text = sprintf("Giro: %d<br>Tempo: %s<br>Pilota: %s", lap, time, surname))) 
+ggplotly(vs_lap, tooltip = "text")
 ```
 
 # La classifica dei campioni
