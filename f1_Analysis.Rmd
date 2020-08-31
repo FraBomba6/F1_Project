@@ -107,6 +107,14 @@ I singoli costruttori hanno dei ricavi annui che vanno dai 70 milioni USD ai __5
 La pandemia globale che stiamo affrontando ha messo in difficoltà anche il mondo dello motorsport. Questo ha causato uno slittamento dell'inizio della stagione e una riduzione drastica dei circuiti a disposizione, costringendo la FIA ad organizzare gare multiple su alcuni circuiti (Spielberg, Silverstone e Manama), ad escludere circuiti di importanza storica come Monaco e ad assegnare all'Italia ben 3 gare su altrettanti circuiti (Monza, Imola e Mugello).
 
 Ad oggi ci sono in calendario 17 gare e difficilmente se ne aggiungeranno altre
+```{r}
+races %>%
+  filter(year == 2020) %>%
+  kable() %>%
+  kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
+  scroll_box(width = "100%", height = "500px")
+```
+
 
 ## I team 2020
 ```{r 2020_teams, out.height = "100%", out.width = "100%"}
@@ -211,7 +219,7 @@ races %>%
 ```
 
 
-Da allora la F1 ha gareggiato in tutti i continenti (Antartide esclusa, ovviamente...) arrivando a totalizzare __`r races %>% filter(date < as.character(Sys.Date())) %>% select(raceId) %>% nrow()`__ gare (numero generato automaticamente a partire dal df __races__)
+Da allora la F1 ha totalizzato __`r races %>% filter(date < as.character(Sys.Date())) %>% select(raceId) %>% nrow()`__ gare (numero generato automaticamente a partire dal df __races__)
 
 Per poter apprezzare in modo significativo la distribuzione dei GP nel mondo è possibile creare una mappa utilizzando la libreria __leaflet__.
 La mappa può essere anche arricchita di informazioni per rendere la sua esplorazione più significativa. A tal fine è stato deciso di:
@@ -221,7 +229,7 @@ La mappa può essere anche arricchita di informazioni per rendere la sua esplora
 1. Individuare l'ultimo vincitore di un GP (nome, cognome, anno di vittoria e costruttore della vettura)
 
 ## Occorrenze di ogni GP
-```{r gp_occurrence, message=FALSE}
+```{r gp_occurrence}
 circuits_stat <- races %>%  # races è un buon punto di partenza, contiene le informazioni essenziali su ogni gara svoltasi nei 70 anni della F1
   group_by(circuitId, name) %>%  # raggruppamento per id del circuito e nome
   count(sort = TRUE) %>%  # conteggio delle gare disputate in ogni gruppo
@@ -238,7 +246,7 @@ kable(circuits_stat) %>%
 ```
 
 ## Occorenze per stato
-```{r country_occurrence, message=FALSE}
+```{r country_occurrence}
 gp_per_country <- circuits_stat %>%
   select(gp_num, country) %>%  # L'unico interesse, in questo caso, è sapere quante gare ha ospitato uno stato. Si seleziona dunque solo la colonna numero di gp (riferiti ad un circuito) e lo  stato in cui il circuito è localizzato
   group_by(country) %>% # raggruppo per stato
@@ -330,7 +338,7 @@ gp_per_country$country[gp_per_country$country == "UK"] <- "United Kingdom"
 gp_per_country$country[gp_per_country$country == "UAE"] <- "United Arab Emirates"
 gp_per_country$country[gp_per_country$country == "USA"] <- "United States of America"
 ```
-+ ai dati del __.geojson__ vanno uniti i dati relativi al numero di GP ospitati dagli stati per poter manipolare le opzioni delle funzione della libreria leaflet in maniera agevole
++ ai dati del __.geojson__ vanno uniti i dati relativi al numero di GP ospitati dagli stati per poterli integrare al meglio nella mappa
 
 Di seguito viene mostrato un esempio di quanto fatto
 ```{r add occurrences}
@@ -508,7 +516,8 @@ vs_lap <- lap_times %>%
   group_by(year, lap, circuitId) %>%
   filter(milliseconds == min(milliseconds)) %>%
   ggplot(aes(x = lap, y = milliseconds, group = year, color = interaction(circuitRef, year))) +
-  geom_line(aes(text = sprintf("Giro: %d<br>Tempo: %s<br>Pilota: %s", lap, time, surname))) 
+  geom_line(aes(text = sprintf("Giro: %d<br>Tempo: %s<br>Pilota: %s", lap, time, surname))) +
+  labs(color = "Circuit")
 ggplotly(vs_lap, tooltip = "text")
 ```
 
@@ -534,7 +543,7 @@ Su Wikipedia è presente una [pagina](https://it.wikipedia.org/wiki/Sistema_di_p
 ![](./data/wikipedia.png){width=100%}
 
 La pagina viene scaricate e la tabellla contenuta in essa viene estratta
-```{r}
+```{r raw table}
 url <- 'https://it.wikipedia.org/wiki/Sistema_di_punteggio_della_Formula_1'
 wiki_page <- read_html(url) # Download della pagina
 point_scoring_system <- html_nodes(wiki_page, '.wikitable') # Estrazione del contenitore della tabella
@@ -555,7 +564,7 @@ Come si può notare, la tabella convertita in dataframe è inutilizzabile così 
 1. Conversione dei dati contenuti nel df da char a int
 
 Si ottiene alla fine delle operazioni la seguente tabella
-```{r}
+```{r tidy table}
 point_scoring_system <- point_scoring_system %>% 
   rename("validForDrivers" = 13, "validForConstructors" = 14, year = Stagioni, fastLap = "Giro veloce") %>%
   rename_all(~str_replace(., "(\\d+)(°)", "n\\1")) %>%  # Conversione dei nomi delle colonne da x a nx
@@ -596,60 +605,34 @@ kable(point_scoring_system) %>%
 
 La tabella risulta ora utilizzabile e ben formattata
 
-## Numero di piloti
-Per il calcolo di alcuni indici è necessario sapere il numero di piloti che parteciano ogni anno ad un campionato. Operando un join tra la tabella __driver_standings__ e la tabella __races__ si associa ad ogni standing del pilota l'anno in cui gareggia
+## Dati aggiuntivi per il sistema di punteggio
+E' necessario stabilire alcuni dati da inserire nella tabella dei punteggi che saranno poi utili nel momento in cui dovrà essere stabilito il miglior pilota della F1.
 
-```{r}
-drivers_each_year <-
-  inner_join(driver_standings, select(races, year, raceId), by = "raceId") %>%
-  select(year, driverId) %>%
-  mutate(driverId = as.character(driverId))
-
-kable(drivers_each_year) %>%
-  kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
-  scroll_box(width = "100%", height = "300px")
-```
-
-Il regolamento F1 consente ad un pilota di riserva di subentrare in caso di problemi con uno dei piloti ufficiali, per questo non è possibile a priori prendere a campione una gara dell'annata per contare gli id ma è più sicuro fare un'analisi di tutte le gare e operare un distinct() per prendere in modo univoco gli id dei piloti che hanno partecipato ad almeno una gara. Vengono poi contati tutti gli __id__ raggruppati per anno
-
-```{r}
-drivers_each_year <- drivers_each_year %>%
-  distinct() %>%
-  count(year) %>%
-  rename(nDrivers = n) %>%
-  ungroup()
-
-kable(drivers_each_year) %>%
-  kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
-  scroll_box(width = "100%", height = "300px")
-```
-
-## Statistiche aggiuntive per il sistema di punteggio
-E' necessario stabilire alcune statistiche da inserire nella tabella dei punteggi che saranno poi utili nel momento in cui dovrà essere stabilito il miglior pilota della F1.
-
-Per prima cosa viene aggiunta alla tabella con il sistema di punteggio il numero di piloti che hanno gareggiato durante la stagione. Di seguito l'esempio della prima riga del dataframe
-```{r}
-point_scoring_system <- point_scoring_system %>%
-  left_join(drivers_each_year, by = "year")
-
-point_scoring_system %>% 
-  slice_head() %>%
-  kable() %>%
-  kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
-  scroll_box(width = "100%")
-```
 Viene quindi calcolato:
 
 + il numero massimo di punti che un pilota può ottenere (arrivando sempre primo e stabilendo il giro veloce su ogni tracciato)
 + il numero massimo di punti che un costruttore può ottenere (quanto i piloti arrivano sempre primo e secondo)
 + il numero di punti disponibili in tutto il mondiale
-```{r}
++ il numero di piloti della stagione
+
+```{r add data}
 point_scoring_system <- point_scoring_system %>%
   group_by(year) %>%
   mutate(maxDriversPoints = n1 * validForDrivers + fastLap * rounds) %>%
   mutate(maxConstructrosPoints = n1 * validForConstructors + n2 * validForConstructors) %>%
   mutate(availableDriversPoints = (n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10 + fastLap) * validForDrivers) %>%
   ungroup()
+
+n_drivers <- driver_standings %>%
+  left_join(select(races, raceId, year), by = "raceId") %>%
+  select(driverId, year) %>%
+  group_by(year) %>%
+  distinct() %>%
+  count() %>%
+  rename(nDrivers = n)
+
+point_scoring_system <- point_scoring_system %>%
+  left_join(n_drivers, by = "year")
 
 kable(point_scoring_system) %>%
   kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
@@ -661,7 +644,7 @@ Il dataset in dotazione non contiene tabelle che riassumano chi sono i vincitori
 Per ovviare a questa mancanza e vista la struttura del dataset è necessario utilizzare il seguente approccio:
 
 1. Trovare la lista degli id delle ultime gare di una stagione a partire dal df __races__
-```{r}
+```{r last races}
 last_race_ids <- races %>%
   filter(date < Sys.Date()) %>%
   group_by(year) %>%
@@ -675,8 +658,8 @@ kable(last_race_ids) %>%
   scroll_box(width = "100%", height = "300px")
 ```
 
-1. Fare un join della lista appena trovata e il df __driver_standings__ per trovare le classifiche dopo l'ultima gara di ogni stagione e isolare il pilota con position == 1 per ogni anno
-```{r}
+1. Trovare le classifiche dopo l'ultima gara di ogni stagione e isolare il pilota vincitore per ogni anno
+```{r champions}
 champions <- 
   inner_join(driver_standings, last_race_ids, by = "raceId") %>%  # isolamento delle classifiche dopo l'ultima gara dell'anno
   group_by(year) %>%
@@ -695,16 +678,15 @@ kable(champions) %>%
   kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
   scroll_box(width = "100%", height = "300px")
 ```
+$~$
+Nei primi anni della F1 era possibile sostituire il pilota alla guida di una vettura, della stessa casa produttrice, durante una gara, questo permetteva ai piloti di "rubare" il posto ad un compagno se questo era più avantaggiato. Nelle tabelle questo porta a dei doppi risultati per alcuni piloti. Per ovviare a questo problema è stato operato un distinct() perché uno di questi piloti è sato campione del mondo.
 
-Nei primi anni della F1 era possibile sostituire il pilota alla guida di una vettura, della stessa casa produttrice, durante una gara, questo permetteva ai piloti di "rubare" il posto ad un compagno se questo era più avantaggiato. Nelle tabelle questo porta a dei doppi risultati per alcuni piloti. Per ovviare a questo problema è stato operato un distinct() perché uno di questi piloti è sato campione del mondo
-
-Ci sono stati tre campioni della F1 che per vari problemi non hanno partecipato all'ultima gara, l'autore del dataset ha deciso di non inserire in races un entry per questi piloti. Anche questo problema è stato corretto in precedenza
+Ci sono stati tre campioni della F1 che per vari problemi non hanno partecipato all'ultima gara della stagione, l'autore del dataset ha deciso di non inserire in __races__ un entry per questi piloti. Anche questo problema è stato corretto in precedenza.
 
 ## Numero di vittorie
-Il primo indice calcolato è stato il numero di vittorie rispetto al numero di gare effettuate
+Il primo indice calcolato è stato il numero di vittorie rispetto al numero di gare effettuate $$winsRate = \frac {wins}{starts}$$
 
-Per trovare il numero di gare effettuato è bastato contare in __results__ il numero di apparizione di ogni id corrispondente ad un pilota campione del mondo
-
+Per trovare il numero di gare effettuato è bastato contare in __results__ il numero di apparizioni di ogni id corrispondente ad un pilota campione del mondo:
 ```{r}
 champions <- champions %>%
     left_join(
@@ -723,8 +705,8 @@ kable(champions) %>%
   scroll_box(width = "100%", height = "300px")
 
 ```
-
-Il numero di vittorie è anch'esso contenuto nel df __results__: isolati i risultati con position == 1 e ragruppando per pilota, è necessario contare il numero di occorrenze
+$~$
+Il numero di vittorie è clacolabile anch'esso a partire dal df __results__:
 ```{r}
 champions <- champions %>%
   left_join(
@@ -744,8 +726,8 @@ kable(champions) %>%
   scroll_box(width = "100%", height = "300px")
 
 ```
-
-A conclusione è necessario calcolare l'indice di vittorie
+$~$
+A conclusione è necessario calcolare l'indice di vittorie:
 ```{r}
 champions <- champions %>%
   mutate(winsRate = wins/starts)
@@ -756,9 +738,9 @@ kable(champions) %>%
 ```
 
 ## Contributo dei campioni ai team
-Un indice interessante per valutare le performance di un pilota è il rapporto $$ punti\;pilota / punti\;squadra $$ che fornisce una misura del grado di bravura del pilota rispetto al compagno di squadra (importante è sottolineare che i piloti utilizzano due vetture identiche e varia solo l'assetto in funzione del circuito)
-
-Per calcolare tale indice vengono inizialmente aggiunte delle informazioni al df champions
+Un indice interessante per valutare le performance di un pilota è il rapporto $$ability = \frac {punti\;pilota}{punti\;squadra} $$ che fornisce una misura del grado di bravura del pilota rispetto al compagno di squadra (importante è sottolineare che i piloti utilizzano due vetture identiche e varia solo l'assetto in funzione del circuito).
+$~$
+Per calcolare tale indice vengono inizialmente aggiunte delle informazioni al df __champions__:
 ```{r}
 champions <- champions %>%
   left_join(select(drivers, forename, surname, driverId), by = "driverId") %>%
@@ -770,11 +752,11 @@ kable(champions) %>%
   kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
   scroll_box(width = "100%", height = "300px")
 ```
-
-Dal point_scoring_system e dal df precedente è evidente come nei primi 8 anni della F1 non si sia disputato il campionato costruttori. Il campionato costruttori si svolge parallelamente a quello piloti e consta nel cumulo dei punti di TUTTI i piloti che corrono per una scuderia. Dato che il sistema di ranking che è stato previsto per determinare il campione dei campioni necessita del numero di punti nel campionato costruttori viene fatta manualmente la proiezione dei punti che i piloti avrebbero portato al proprio costruttore.
-
-Inizialmente è cruciale sapere quali sono i costruttori per cui i campioni del mondo gareggiavano, viene effettuato un select e un filtro per determinare tali constrtuttori
-
+$~$
+Dal __point_scoring_system__ e dal df precedente è evidente come nei primi 8 anni della F1 non si sia disputato il campionato costruttori. Il campionato costruttori si svolge parallelamente a quello piloti e consta nel cumulo dei punti di TUTTI i piloti che corrono per una scuderia.
+Dato che l'indice introdotto in precedenza necessita del numero di punti nel campionato costruttori viene fatta manualmente la proiezione dei punti che i piloti avrebbero portato al proprio costruttore.
+$~$
+Inizialmente è cruciale sapere quali sono i costruttori per cui i campioni del mondo gareggiavano:
 ```{r}
 fill_the_gap <- champions %>%
   select(year, constructorId) %>%
@@ -784,9 +766,8 @@ kable(fill_the_gap) %>%
   kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
   scroll_box(width = "100%", height = "300px")
 ```
-
-Vengono poi unite le informazioni sulle gare in cui hanno partecipato le vetture di un costruttore, in paricolare è necessario sapere in quali posizioni hanno concluso i piloti della casa costruttrice.
-
+$~$
+Vengono poi unite le informazioni sulle gare in cui hanno partecipato le vetture di un costruttore, in paricolare è necessario sapere in quali posizioni hanno concluso i piloti della casa costruttrice:
 ```{r}
 fill_the_gap <- fill_the_gap %>%
   left_join(select(races, year, raceId), by = "year") %>%
@@ -796,9 +777,8 @@ kable(fill_the_gap) %>%
   kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
   scroll_box(width = "100%", height = "300px")
 ```
-
-Di tutte le gare individuate vengono filtrate quelle in cui i piloti sono arrivati almento quinti (come si può notare dalla tabella point_scoring_system, tra il 1950 e il 1957 solo i piloti arrivati almeno quinti ottenenvano dei punti) e la variabile position viene convertita in modo da essere equivalente al nome delle colonne in point_scoring_system
-
+$~$
+Di tutte le gare individuate vengono filtrate quelle in cui i piloti sono arrivati almento quinti (come si può notare dalla tabella __point_scoring_system__, tra il 1950 e il 1957 solo i piloti arrivati almeno quinti ottenenvano dei punti) e la variabile _position_ viene convertita in modo da essere equivalente al nome delle colonne in point_scoring_system:
 ```{r}
 fill_the_gap <- fill_the_gap %>%
   filter(position <= 5) %>%
@@ -808,8 +788,8 @@ kable(fill_the_gap) %>%
   kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
   scroll_box(width = "100%", height = "300px")
 ```
-
-Sapendo ora la posizione dei piloti è necessario associare i punti guadagnati. Viene dunque fatto un join tra la tabella point_scoring_system in cui le colonne sono state trasformate in righe e fill_the_gap
+$~$
+Sapendo ora la posizione dei piloti è necessario associare i punti guadagnati:
 ```{r}
 fill_the_gap <- fill_the_gap %>%
  left_join(select(gather(point_scoring_system, key = 'position', value = 'points', n1:n10), year, position, points), by = c('year', 'position')) %>%
@@ -819,8 +799,8 @@ kable(fill_the_gap) %>%
   kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
   scroll_box(width = "100%", height = "300px")
 ```
-
-Avendo ora i punti che ogni pilota della scuderia ha accumulato, è sufficiente raggruppare in base all'anno (ogni anno un solo pilota vince il campionato e di conseguenza vi è un solo costruttore per anno) e fare la somma dei punti di ogni pilota per ottenere i punti totali
+$~$
+Avendo ora i punti che ogni pilota della scuderia ha accumulato, è sufficiente raggruppare in base all'anno e fare la somma dei punti di ogni pilota di un costruttore per ottenere i punti totali:
 ```{r message=FALSE}
 fill_the_gap <- fill_the_gap %>%
   group_by(year) %>%
@@ -831,8 +811,8 @@ kable(fill_the_gap) %>%
   kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
   scroll_box(width = "100%", height = "300px")
 ```
-
-Ora, ai dati sui campioni del mondo, vengono uniti i risultati ottenuti in precedenza per completare il df
+$~$
+Ora, ai dati sui campioni del mondo, vengono uniti i risultati ottenuti in precedenza per completare il df:
 ```{r}
 champions <- champions %>%
   left_join(fill_the_gap, by = 'year') %>%
@@ -845,7 +825,9 @@ kable(champions) %>%
   kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
   scroll_box(width = "100%", height = "300px")
 ```
-Completata l'integrazione del df __champions__ con i punti del campionato costruttori mancanti è possibile calcolare l'indice __ability__ che da un'idea del grado di abilità del pilota
+$~$
+$~$
+Completata l'integrazione del df __champions__ con i punti del campionato costruttori mancanti è possibile calcolare l'indice __ability__ che da un'idea del grado di abilità del pilota:
 ```{r}
 champions <- champions %>%
   mutate(ability = seasonPoints/constructorPoints)
@@ -855,9 +837,9 @@ kable(champions) %>%
   scroll_box(width = "100%", height = "300px")
 ```
 ## Punti cumulati
-Un'indice di efficienza di un pilota è sicuramente il rapporto tra i punti cumulati in una stagione e il numero di punti disponibili per il vincitore di tutte le gare della stagione. Estendendo questo rapporto a tutti i campionati in cui ha preso parte un pilota si fornisce un indice globale delle sue abilità.
+Un'indice di efficienza di un pilota è sicuramente il rapporto tra i punti cumulati in carriera e il numero di punti che il pilota ha avuto a disposizione: $$perfectionRate = \frac {punti\;carriera}{punti\;disponibili}$$.
 
-Dal df __point_scoring_system__ si ottiene il numero massimo di punti disponibili per singolo pilota nella stagione (punteggio a fine stagione di un pilota che arriva sempre primo ed effettua tutti i giri veloci)
+Dal df __point_scoring_system__ si ottiene il numero massimo di punti disponibili per singolo pilota nella stagione (punteggio a fine stagione di un pilota che arriva sempre primo ed effettua tutti i giri veloci):
 ```{r}
 point_scoring_system %>%
   select(year, maxDriversPoints) %>%
@@ -865,8 +847,8 @@ point_scoring_system %>%
   kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
   scroll_box(width = "100%", height = "300px")
 ```
-
-Combinando le informazioni contenute in champions, results e point_scoring_system si possono ottenere i punti cumulati che un pilota avrebbe potuto ottenere in tutta la sua carriera
+$~$
+Combinando le informazioni contenute in __champions__, __results__ e __point_scoring_system__ si possono ottenere i punti cumulati che un pilota avrebbe potuto guadagnare durante la carriera:
 ```{r}
 champions <- champions %>%
   left_join(
@@ -888,8 +870,8 @@ kable(champions) %>%
   kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
   scroll_box(width = "100%", height = "300px")
 ```
-
-Lavorando ora su champions e results è possibile ricavare i punti che un pilota ha ottenuto in tutta la carriera
+$~$
+Lavorando ora su __champions__ e __results__ è possibile ricavare i punti che un pilota ha ottenuto in carriera:
 ```{r}
 champions <- champions %>%
   left_join(
@@ -908,8 +890,8 @@ kable(champions) %>%
   kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
   scroll_box(width = "100%", height = "300px")
 ```
-
-Combinando i due risultati ottenuti in precedenza si ottiene l'indice di efficienza punti __perfectionRate__
+$~$
+Combinando i due risultati ottenuti in precedenza si ottiene l'indice di efficienza punti __perfectionRate__:
 ```{r}
 champions <- champions %>%
   mutate(perfectionRate = gainedPoints/perfectionPoints)
@@ -925,6 +907,7 @@ Sono stati introdotti due indici riguardanti le vittorie dei campionati del mond
 * dominion: indice che va da 0 a 1 e da una misura del dominio di un pilota in F1; è dato dalla min max normalization del numero consecutivo di campionati che un pilota è stato in grado di ottenere;
 
 * championship: indice che va da 0 a 1 e da una misura del numero di campionati vinti; è dato dalla min max normalization del numero di campionati vinti dal pilota.
+
 ```{r}
 champions <- champions %>%
   mutate(dominion = 1, championship = 1) %>%
@@ -948,10 +931,11 @@ kable(champions) %>%
 ```
 
 ## La classifica dei campioni
-Avendo calcolato gli indici necessari a stilare la classifica dei campioni la media degli indici restituisce il punteggio finale del singolo pilota
+E' stato deciso si costruire calcolare il punteggio dei piloti facendo la media ponderata degli indici calcolati:
+$$score = championship \times 0.3 + dominion \times 0.25 + perfectionRate \times 0.15 + winsRate \times 0.2 + ability \times 0.1 $$
 ```{r}
 best <- champions %>%
-  mutate(rank = (championship + dominion + perfectionRate + winsRate + ability)/5) %>%
+  mutate(rank = (championship * 0.3 + dominion * 0.25 + perfectionRate * 0.15 + winsRate * 0.2 + ability * 0.1)) %>%
   select(driver, year, rank) %>%
   arrange(desc(rank))
 
@@ -960,14 +944,24 @@ kable(best) %>%
   scroll_box(width = "100%", height = "300px")
 
 ```
-Dato che la classifica è applicata a tutti i campioni del mondo, stagione per stagione, è possibile avere un pilota con score differenti a seconda della stagione di riferimento. Massimizzando gli score dei piloti è possibile ottenere una classifica ridotta e più informativa
-```{r}
+Dato che la classifica è applicata a tutti i campioni del mondo, stagione per stagione, è possibile avere un pilota con score differenti a seconda della stagione di riferimento. Massimizzando gli score dei piloti è possibile ottenere una classifica ridotta e più efficace:
+```{r, out.height = "100%", out.width = "100%"}
 best %>%
   group_by(driver) %>%
   filter(rank == max(rank)) %>%
   kable() %>%
   kable_minimal(c("striped", "hover", "condensed", "responsive"), font_size = 15) %>%
   scroll_box(width = "100%", height = "300px")
+
+best %>%
+  group_by(driver) %>%
+  filter(rank == max(rank)) %>%
+  ggplot(aes(x = reorder(driver, -rank), y = rank)) +
+  geom_col() +
+  theme_ipsum() +
+  theme(axis.text.x = element_text(angle = 90)) +
+  xlab("")
 ```
 
-Come pronosticabile le prime due posizioni sono occupate da Schumaker e da Hamilton. In questa classifica Hamilton ha vinto anche la stagione corrente in base alle gare fino ad ora disputate, se dovesse avere delle prestazioni simili a quelle della scorsa stagione passerebbe ad essere il migliore pilota di sempre della F1
+Come pronosticabile le prime due posizioni sono occupate da Schumacher e da Hamilton. In questa classifica Hamilton ha vinto anche la stagione corrente in base alle gare fino ad ora disputate, se dovesse avere delle prestazioni eccezionali potrebbe passare in testa alla classifica.
+Una prossima versione del ranking potrebbe contenere il numero di Pole position dei piloti, ma per una mancanza online dei dati molto vecchi non è semplice risalire stagione per stagione a tale informazione.
