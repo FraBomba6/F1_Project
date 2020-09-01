@@ -153,6 +153,32 @@ constructor_championships %>%
     scale_fill_viridis_d(option = "C") +
     scale_y_continuous(breaks = seq(0, 16, by = 2))
 ```
+```{r, out.height = "100%", out.width = "100%"}
+constructor_standings %>%
+  semi_join(filter(races, year == 2020), by = "raceId") %>%
+  left_join(select(races, year, round, raceId), by = "raceId") %>%
+  left_join(select(constructors, constructorId, constructor = name), by = "constructorId") %>%
+  select(-constructorStandingsId, -positionText) %>%
+  arrange(desc(constructor)) %>%
+  plot_ly(
+    x = ~position,
+    y = ~points,
+    size = ~wins,
+    color = ~constructor,
+    colors = c("#9B0000", "#469BFF", "#DC0000", "#F0D787", "#FF8700", "#000000", "#F596C8", "#1E41FF", "#FFF500", "#00D2BE"),
+    frame = ~round,
+    text = ~constructor,
+    hovertemplate = paste(
+                        '<br>%{y}<br>'),
+    type = 'scatter',
+    mode = 'markers'
+  ) %>%
+    layout(
+    xaxis = list(
+      type = "log"
+    )
+  )
+```
 
 ## I piloti 2020
 ```{r 2020_drivers, out.height = "100%", out.width = "100%"}
@@ -203,6 +229,36 @@ plot <- drivers_2020 %>%
     scale_y_continuous(breaks = seq(2000, 2020, by = 2))
 
 ggplotly(plot)
+```
+
+```{r, out.height = "100%", out.width = "100%"}
+driver_standings %>%
+  semi_join(filter(races, year == 2020), by = "raceId") %>%
+  left_join(select(races, year, round, raceId), by = "raceId") %>%
+  left_join(select(drivers, driverId, forename, surname), by = "driverId") %>%
+  left_join(select(results, driverId, raceId, constructorId), by = c("raceId", "driverId")) %>%
+  left_join(select(constructors, constructorId, constructor = name), by = "constructorId") %>%
+  select(-driverStandingsId, -positionText) %>%
+  unite(name, forename:surname, sep = " ") %>%
+  arrange(desc(constructor)) %>%
+  plot_ly(
+    x = ~position,
+    y = ~points,
+    size = ~wins,
+    color = ~constructor,
+    colors = c("#9B0000", "#469BFF", "#DC0000", "#F0D787", "#FF8700", "#000000", "#F596C8", "#1E41FF", "#FFF500", "#00D2BE"),
+    frame = ~round,
+    text = ~name,
+    hovertemplate = paste('<b>%{text}</b>',
+                        '<br>%{y}<br>'),
+    type = 'scatter',
+    mode = 'markers'
+  ) %>%
+    layout(
+    xaxis = list(
+      type = "log"
+    )
+  )
 ```
 
 # Geografia della F1
@@ -440,7 +496,7 @@ suzuka_laps %>%
   ylab("Lap time [millisecoinds]") +
   xlab("Year") +
   theme_ipsum() +
-  theme(axis.text.x = element_text(angle = 90))
+  theme(axis.text.x = element_text(angle = 90)) 
 ```
 Dal grafico precedente risulta interessante osservare come nel 2015 il giro più veloce registrato in gara sia nettamente migliore di tutti i tempi sul giro registrati tra il 2006 e il 2018 (sempre durante una gara)
 
@@ -503,7 +559,9 @@ hungary_q %>%
   theme_ipsum() +
   theme(axis.text.x = element_text(angle = 90))
 ```
-Dal grafico precedente si può confermare quanto detto in precedenza: le vetture del 2005 pur essendo, a livello motoristico, più performanti di auto più recenti (per esempio la Red Bull 2010 con motore Renault da 750 CV), su circuiti dove l'aerodinamica ha maggior peso non riescono ad esprimere la loro superiorità.
+Dal grafico precedente si può confermare quanto detto in precedenza: le vetture del 2005 pur essendo, a livello motoristico, più performanti di auto più recenti (per esempio la Red Bull 2010 con motore Renault da 750 CV), su circuiti dove l'aerodinamica ha maggior importanza non riescono ad esprimere la loro superiorità.
+
+Un'altra informazione interessante che si può estrapolare dal precedente grafico è che nel 2016 e nel 2018 con molta probabilità le qualifiche si sono svolte con condizioni meteo miste. Infatti, la scatola ha un estensione notevole, indice del fatto che i tempi registrati sono molto vari.
 
 ## Confronto diretto di alcuni tracciati
 ```{r vs laps, out.height = "100%", out.width = "100%"}
@@ -521,7 +579,7 @@ vs_lap <- lap_times %>%
 ggplotly(vs_lap, tooltip = "text")
 ```
 
-Confrontando ora l'andamento di tre gare delle stagioni 2004 e 2019 (viene considerato il miglior tempo giro per giro) è interessante rilevare anche altri cambiamenti nelle prestazioni, in particolare nel comportamento degli pneumatici.
+Confrontando l'andamento di tre gare delle stagioni 2004 e 2019 (viene considerato il miglior tempo giro per giro) è interessante rilevare anche altri cambiamenti nelle prestazioni, in particolare nel comportamento degli pneumatici.
 
 Isolando il tracciato di Monza si coglie il primo aspetto interessante: le auto del 2019 sono più performanti nei primissimi giri. Questo è dovuto al fatto che gli pneumatici sono lisci e composti da una mescola di mastice più morbida che accumula il calore necessario per la massima aderenza in tempi minori e garantisce una miglior aderenza sul tracciato. Non appena gli pneumatici delle auto del 2004 arrivano a temperatura ottimale vi è il netto superamento in termini prestazionali
 
