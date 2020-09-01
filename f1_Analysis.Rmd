@@ -84,10 +84,16 @@ Al termine di ogni gara ai primi dieci piloti vengono assegnati un determinato n
 
 Parallelamente al campionato piloti si svolge il campionato costruttori dove i team accumulano i punti di ogni singolo pilota alla guida di una propria vettura.
 
+I GP (Gran Premio) si sviluppano su tre giornate:
+
++il venerdì si svolgono due prove libere;
++il sabato viene eseguita un ulteriore prova libera e si tengongo le qualifiche;
++la domenica si corre la gara.
+
 Negli ultimi anni prendono il via 20 piloti divisi in 10 case costruttrici. Da regolamento sono anche previsiti piloti di riserva che possono subentrare nel caso di problemi di un pilota ufficiale.
 
 ##  Il giro d'affari della F1
-Il report finanziario annuale 2019 di Liberty Media (proprietaria della F1) riporta un ricavo di __2,022 bilioni USD__ (pagina 96 del [report](https://ir.libertymedia.com/static-files/2aeaccfa-a5e5-4fd4-abd1-eaa9dad5d6c0)).
+Il report finanziario annuale 2019 di Liberty Media (proprietaria della F1) riporta un ricavo di __2,022 miliardi USD__ (pagina 96 del [report](https://ir.libertymedia.com/static-files/2aeaccfa-a5e5-4fd4-abd1-eaa9dad5d6c0)).
 
 I ricavi si dividono principalmente in:
 
@@ -512,7 +518,9 @@ A conferma di quanto detto in precedenza in merito al basso sviluppo aerodinamic
 Definito _Monaco senza i palazzi_ l' __Hungaroring__ è il circuito che dal 1986 ospita il GP di Ungheria. E' caratterizzato dalle complesse curve miste (veloci e lente) e dai brevi rettilinei, questo costringe i costruttori ad adottare setup aerodinamici che generino altissimi livelli di portanza per permettere alle auto di mantenere velocità adeguate nelle curve rinunciando alle velocità di punta sui rettilinei.
 
 ![](https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Hungaroring.svg/569px-Hungaroring.svg.png)
-##Tempi in qualifica
+
+
+## Tempi in qualifica
 Mentre in gara si attuano delle strategie di conservazione di pneumatici e motore, in qualifica si cerca di massimizzare le prestazioni sui singoli giri, il ché fa emergere anche le carenze tecniche delle vetture. Per questo motivo il seguente grafico si basa sui tempi dei migliori tempi in qualifica.
 ```{r suzuka q, out.height = "100%", out.width = "100%"}
 hungary_q <- qualifying %>%
