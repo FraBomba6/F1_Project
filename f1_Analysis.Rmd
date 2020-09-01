@@ -1,7 +1,7 @@
 ---
 title: "Un viaggio in F1"
 author: "Francesco Bombassei De Bona"
-date: "27/8/2020"
+date: "02/09/2020"
 output:
  ioslides_presentation:
     css: style.css
