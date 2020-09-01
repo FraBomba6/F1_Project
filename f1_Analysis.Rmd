@@ -998,7 +998,8 @@ kable(champions) %>%
 
 ## La classifica dei campioni
 E' stato deciso si costruire calcolare il punteggio dei piloti facendo la media ponderata degli indici calcolati:
-$$score = championship \times 0.3 + dominion \times 0.25 + perfectionRate \times 0.15 + winsRate \times 0.2 + ability \times 0.1 $$
+
+championship * 0.3 + dominion * 0.25 + perfectionRate * 0.15 + winsRate * 0.2 + ability * 0.1
 ```{r}
 best <- champions %>%
   mutate(rank = (championship * 0.3 + dominion * 0.25 + perfectionRate * 0.15 + winsRate * 0.2 + ability * 0.1)) %>%
