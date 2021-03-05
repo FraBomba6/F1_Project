@@ -25,4 +25,7 @@ This project can be splitted in three sections:
 2. #### Performance progression in the last 20-ish years:
     When we normally think to technical development we expect a corresponding performance improvment. Is this always true? In the second section I give a response to this question
 3. #### Ranking:
-    If you ask somebody "Who is the best pilot ever?" to a group of F1 fans you must be prepared to an heated discussion. Every fan has his personal parameters to judge a pilot  
+    If you ask somebody "Who is the best pilot ever?" to a group of F1 fans you must be prepared to an heated discussion. Every fan has his personal parameters to judge a pilot and I decided to build a ranking system based on data (ELO is not suitable for this comparsions due to technical differences)
+
+## Language disclaimer
+Due to the necessity to present this project to the professor and colleagues, the presentation is in Italian
