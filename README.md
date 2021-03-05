@@ -20,7 +20,7 @@ Getting serious now. My objective was to show some intresting data to my colleag
 
 ### Project sections
 This project can be splitted in three sections:
-1. #### Introduction on F1, the current season and F1 geography:
+1. #### Introduction on F1, the 2020 season and F1 geography:
     In this section there's an introduction to F1, an introduction to the current season and some data elaboration to visualize the GPs distribution around the globe in all the F1 history, to show how much Italy is bounded to this sport
 2. #### Performance progression in the last 20-ish years:
     When we normally think to technical development we expect a corresponding performance improvment. Is this always true? In the second section I give a response to this question
